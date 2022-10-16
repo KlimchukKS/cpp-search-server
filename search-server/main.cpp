@@ -23,11 +23,18 @@ void TestExcludeStopWordsFromAddedDocumentContent() {
 }
 void TestExcludeMinusWords() {
     const vector<int> ratings = {1, 2, 3};
-    {
-        SearchServer server;
-        server.AddDocument(0, "cat in the city"s, DocumentStatus::ACTUAL, ratings);
-        ASSERT_HINT(server.FindTopDocuments("cat -city"s).empty(),
-                    "Documents containing minus words from a search query should not be included in search results."s);
+    SearchServer server;
+    server.AddDocument(0, "cat in the city"s, DocumentStatus::ACTUAL, ratings);
+    server.AddDocument(1, "fluffy cat"s, DocumentStatus::ACTUAL, ratings);
+    server.AddDocument(3, "white cat"s, DocumentStatus::ACTUAL, ratings);
+    const auto found_docs = server.FindTopDocuments("cat -city"s);
+    ASSERT(!found_docs.empty());
+    for(const auto& doc : found_docs){
+        if(doc.id == 0){
+            bool test_minus_words = false;
+            ASSERT_HINT(test_minus_words,
+                        "Documents containing minus words from a search query should not be included in search results."s);
+        }
     }
 }
 void TestForCorrectCalculationDocumentRating(){
@@ -38,7 +45,7 @@ void TestForCorrectCalculationDocumentRating(){
     server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
     const auto found_docs = server.FindTopDocuments("cat"s);
     const Document& doc0 = found_docs[0];
-    ASSERT_EQUAL_HINT(doc0.rating, 2,
+    ASSERT_EQUAL_HINT(doc0.rating, (1 + 2 + 3) / 3,
                       "The rating of the added document should be equal to the arithmetic average of the document ratings."s);
 }
 void TestForSortingFoundDocumentsRelevance(){
@@ -47,16 +54,16 @@ void TestForSortingFoundDocumentsRelevance(){
     server.AddDocument(1, "fluffy cat fluffy tail"s,       DocumentStatus::ACTUAL, {1, 2, 3});
     server.AddDocument(2, "groomed dog expressive eyes"s, DocumentStatus::ACTUAL, {1, 2, 3});
     server.AddDocument(3, "house bee yellow black stripes"s,         DocumentStatus::ACTUAL, {1, 2, 3});
-    bool is_sorted = true;
-    double relevance_buffer = 1;
-    for(const auto& doc : server.FindTopDocuments("fluffy groomed cat"s)){
+    const auto found_docs = server.FindTopDocuments("fluffy groomed cat"s);
+    double relevance_buffer = found_docs[0].relevance;
+    for(const auto& doc : found_docs){
         if(doc.relevance > relevance_buffer){
-            is_sorted = false;
+            bool test_sorting_relevance = false;
+            ASSERT_HINT(test_sorting_relevance,
+                        "Found documents should be sorted in descending order"s);
         }
         relevance_buffer = doc.relevance;
     }
-    ASSERT_HINT(is_sorted,
-                "Found documents should be sorted in descending order"s);
 }
 void TestForCorrectlyCalculatingRelevanceDocuments(){
     SearchServer server;
@@ -65,11 +72,9 @@ void TestForCorrectlyCalculatingRelevanceDocuments(){
     server.AddDocument(2, "groomed dog expressive eyes", DocumentStatus::ACTUAL, {1, 2, 3});
     const auto found_docs = server.FindTopDocuments("fluffy groomed cat"s);
     const double epsilon = 1e-4;
-    ASSERT_HINT(abs(found_docs[0].relevance - 0.6507) < epsilon,
+    ASSERT_HINT(abs(found_docs[2].relevance - (log(server.GetDocumentCount() / 2. )  * (1. / 4. )) < epsilon),
                 "Relevance is not calculated correctly"s);
-    ASSERT_HINT(abs(found_docs[1].relevance - 0.2746) < epsilon,
-                "Relevance is not calculated correctly"s);
-    ASSERT_HINT(abs(found_docs[2].relevance - 0.1014) < epsilon,
+    ASSERT_HINT(abs(found_docs[0].relevance - ((log(server.GetDocumentCount() / 1. )  * (2. / 4. )) + (log(server.GetDocumentCount() / 2. )  * (1. / 4. ))) < epsilon),
                 "Relevance is not calculated correctly"s);
 }
 void TheTestForFindingDocumentsStatus(){
@@ -162,7 +167,7 @@ void TestFilteringSearchResultsUsingPredicate() {
             if(doc.id == 3){
                 bool sorted_from_status = false;
                 ASSERT_HINT(sorted_from_status,
-                            "No sorting from status"s);
+                            "No sorting by status"s);
             }
         }
     }
@@ -173,7 +178,7 @@ void TestFilteringSearchResultsUsingPredicate() {
         ASSERT_EQUAL(found_docs.size(), 2u);
         for(const auto& doc: found_docs){
             ASSERT_EQUAL_HINT(doc.id % 2, 0,
-                              "No sorting from id"s);
+                              "No sorting by id"s);
         }
     }
     {
@@ -185,7 +190,7 @@ void TestFilteringSearchResultsUsingPredicate() {
             if(doc.rating < 8){
                 bool sorted_from_rating = false;
                 ASSERT_HINT(sorted_from_rating,
-                            "No sorting from rating"s);
+                            "No sorting by rating"s);
             }
         }
     }
