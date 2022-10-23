@@ -173,7 +173,6 @@ public:
         if(index < 0 || index >= documents_.size()){
             throw out_of_range("Invalid index");
         }
-        
         return ordinal_number_document[index];
     }
  
