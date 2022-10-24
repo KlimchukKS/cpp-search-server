@@ -6,10 +6,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <numeric>
  
 using namespace std;
  
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
+const double epsilon = 1e-6;
  
 string ReadLine() {
     string s;
@@ -81,11 +83,8 @@ public:
     template <typename StringContainer>
     explicit SearchServer(const StringContainer& stop_words)
         : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
-        for(const auto& word : stop_words){
-            if(!IsValidWord(word)){
-                throw invalid_argument("Invalid characters");
-            }
-        }
+        if(!all_of(stop_words.begin(), stop_words.end(), [](const string& word){ return IsValidWord(word); }))
+            throw invalid_argument("Invalid characters"s);
     }
     explicit SearchServer(const string& stop_words_text)
         : SearchServer(
@@ -94,8 +93,11 @@ public:
  
     void AddDocument(int document_id, const string& document, DocumentStatus status,
                                    const vector<int>& ratings) {
-        if(!IsValidWord(document) || !IsValidID(document_id)){
-            throw invalid_argument("Invalid characters or id");
+        if(!IsValidWord(document)){
+            throw invalid_argument("Invalid characters"s);
+        }
+        if(!IsValidID(document_id)){
+            throw invalid_argument("Invalid id"s);
         }
         const vector<string> words = SplitIntoWordsNoStop(document);
         const double inv_word_count = 1.0 / words.size();
@@ -108,19 +110,21 @@ public:
  
     template <typename DocumentPredicate>
     vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
-        if(!IsValidWord(raw_query) || !IsValidQuery(raw_query)){
-            throw invalid_argument("Invalid characters or query");
+        if(!IsValidWord(raw_query)){
+            throw invalid_argument("Invalid characters"s);
+        }
+        if(!IsValidQuery(raw_query)){
+            throw invalid_argument("Invalid query"s);
         }
         const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query, document_predicate);
  
         sort(matched_documents.begin(), matched_documents.end(),
              [](const Document& lhs, const Document& rhs) {
-                 if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+                 if (abs(lhs.relevance - rhs.relevance) < epsilon) {
                      return lhs.rating > rhs.rating;
-                 } else {
-                     return lhs.relevance > rhs.relevance;
                  }
+                 return lhs.relevance > rhs.relevance;
              });
         if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
             matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
@@ -144,8 +148,14 @@ public:
     }
  
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query, int document_id) const {
-        if(!IsValidWord(raw_query) || !IsValidQuery(raw_query) || (document_id < 0)){
-            throw invalid_argument("Invalid characters, id or query");
+        if(!IsValidWord(raw_query)){
+            throw invalid_argument("Invalid characters"s);
+        }
+        if(!IsValidQuery(raw_query)){
+            throw invalid_argument("Invalid query"s);
+        }
+        if(document_id < 0){
+            throw invalid_argument("Invalid id"s);
         }
         const Query query = ParseQuery(raw_query);
         vector<string> matched_words;
@@ -170,17 +180,14 @@ public:
     }
     
     int GetDocumentId(int index) const {
-        if(index < 0 || index >= documents_.size()){
-            throw out_of_range("Invalid index");
-        }
-        return ordinal_number_document[index];
+        return ordinal_number_document.at(index);
     }
  
 private:
     vector<int> ordinal_number_document;
     inline static constexpr int INVALID_DOCUMENT_ID = -1;
     struct DocumentData {
-        int rating;
+        int rating = 0;
         DocumentStatus status;
     };
     const set<string> stop_words_;
@@ -226,11 +233,7 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
-        return rating_sum / static_cast<int>(ratings.size());
+        return accumulate(ratings.begin(), ratings.end(), 0) / static_cast<int>(ratings.size());
     }
  
     struct QueryWord {
