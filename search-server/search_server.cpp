@@ -33,6 +33,7 @@ std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_quer
 int SearchServer::GetDocumentCount() const {
     return documents_.size();
 }
+
 int SearchServer::GetDocumentId(int index) const {
     return document_ids_.at(index);
 }
