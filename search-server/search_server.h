@@ -49,9 +49,9 @@ private:
     bool IsStopWord(const std::string& word) const;
 
     static bool IsValidWord(const std::string& word);
-  
+    
     std::vector<std::string> SplitIntoWordsNoStop(const std::string& text) const;
-  
+    
     static int ComputeAverageRating(const std::vector<int>& ratings);
 
     struct QueryWord {
