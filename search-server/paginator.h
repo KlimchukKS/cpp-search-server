@@ -30,26 +30,32 @@ public:
             }
         }
     }
+    
     auto begin() const {
         return pages_.begin();
     }
     auto end() const {
         return pages_.end();
     }
+    
     class IteratorRange {
     public:
         IteratorRange(Iterator begin, Iterator end)
-                : iterator_range_({begin, end})
-        {}
+                : iterator_range_({begin, end}){
+        }
+        
         Iterator begin() const {
             return iterator_range_.first;
         }
+        
         Iterator end() const {
             return iterator_range_.second;
         }
+        
         int size() const {
             return std::distance(iterator_range_.first, iterator_range_.second);
         }
+        
         friend std::ostream& operator<<(std::ostream& output,  const IteratorRange& iteratorRange) {
             for(auto i = iteratorRange.begin(); i != iteratorRange.end(); ++i) {
                 output << *i;
