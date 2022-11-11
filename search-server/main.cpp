@@ -1,5 +1,4 @@
 #include <iostream>
-#include <ostream>
 
 #include "paginator.h"
 #include "read_input_functions.h"
@@ -8,16 +7,7 @@
 #include "request_queue.h"
 #include "document.h"
 
-template <typename Container>
-auto Paginate(const Container& c, size_t page_size) {
-    return Paginator(begin(c), end(c), page_size);
-}
-
-std::ostream& operator<<(std::ostream& output,  const Document& document) { 
-    output << std::string("{ document_id = ") << document.id << std::string(", relevance = ")
-           << document.relevance << std::string(", rating = ") << document.rating << std::string(" }");
-    return output;
-}
+using namespace std;
 
 int main() {
     SearchServer search_server(std::string("and in at"));
