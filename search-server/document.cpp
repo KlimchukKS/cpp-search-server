@@ -1,5 +1,4 @@
 #include "document.h"
-#include <ostream>
 
 Document::Document(int id, double relevance, int rating)
     : id(id)
