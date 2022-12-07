@@ -15,7 +15,7 @@ public:
     using Clock = std::chrono::steady_clock;
 
     LogDuration(const std::string& id, std::ostream& os = std::cerr)
-            : id_(id), os_(os){
+            : id_(id), os_(os) {
     }
 
     ~LogDuration() {
@@ -28,7 +28,7 @@ public:
     }
 
 private:
-    std::ostream& os_;
     const std::string id_;
+    std::ostream& os_;
     const Clock::time_point start_time_ = Clock::now();
 };
