@@ -12,6 +12,9 @@
 using namespace std;
 
 int main() {
+    
+    TestSearchServer();
+    
     {
         LOG_DURATION_STREAM("Time work program", std::cerr);
         SearchServer search_server(std::string("and in at"));
